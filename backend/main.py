@@ -1,6 +1,6 @@
 # Imports
 import fastapi
-from fastapi.responses import FileResponse
+import fastapi.responses
 import pydantic
 import fastapi.middleware.cors
 import uuid
@@ -93,7 +93,7 @@ def connect():
 
 @app.get("/")
 def serve_frontend():
-    return FileResponse("frontend/index.html")
+    return fastapi.responses.FileResponse("frontend/index.html")
 # Fim de Endpoints do Sistema
 
 
