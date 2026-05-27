@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!-- Configurações da página -->
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Mundo Online</title>
+<!-- Fim de Configurações da página -->
+
+  
+<!-- ESTILO (Interface visual) -->
+<style>
+body {
+    background-color: #0d0d0d;
+    color: #00ffcc;
+    font-family: monospace;
+    display: flex;
+    justify-content: center;
+}
+
+#game {
+    width: 800px;
+    margin-top: 40px;
+}
+
+#log {
+    background-color: black;
+    height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #00ffcc;
+}
+
+#input-area {
+    margin-top: 10px;
+    display: flex;
+}
+
+#command {
+    flex: 1;
+    background-color: black;
+    color: #00ffcc;
+    border: 1px solid #00ffcc;
+    padding: 10px;
+}
+
+button {
+    background-color: black;
+    color: #00ffcc;
+    border: 1px solid #00ffcc;
+    padding: 10px;
+    cursor: pointer;
+}
+</style>
+<!-- FIM de ESTILO (Interface visual) -->
+
+
+</head>
+
+<body>
+
+<!-- ESTRUTURA DA INTERFACE -->  
+<div id="game">
+
+    <div id="log"></div>
+
+    <div id="input-area">
+        <input type="text" id="command" placeholder="Digite um comando...">
+        <button onclick="sendCommand()">Enviar</button>
+    </div>
+
+</div>
+<!-- Fim de ESTRUTURA DA INTERFACE -->
+
+
+<!-- SCRIPT (Lógica do frontend) -->
+<script>
+
+let commandHistory = [];
+let historyIndex = -1;
+let sessionId = null;
+
+// INICIALIZAÇÃO (conexão com o servidor)
+window.onload = async function () {
+    // Permite enviar comando com ENTER
+    document.getElementById("command").addEventListener("keydown", function(e) {
+        
+        if (e.key === "Enter") {
+            sendCommand();
+        }
+    
+        else if (e.key === "ArrowUp") {
+            if (historyIndex > 0) {
+                historyIndex--;
+                this.value = commandHistory[historyIndex];
+            }
+            e.preventDefault();
+        }
+    
+        else if (e.key === "ArrowDown") {
+            if (historyIndex < commandHistory.length - 1) {
+                historyIndex++;
+                this.value = commandHistory[historyIndex];
+            } else {
+                historyIndex = commandHistory.length;
+                this.value = "";
+            }
+            e.preventDefault();
+        }
+    
+    });
+
+    // Chamada ao backend para registrar conexão
+    try {
+        addLog("Conectando ao mundo...");
+        const response = await fetch("http://127.0.0.1:8000/connect");
+        const data = await response.json();
+
+        if (data.session_id) {
+            sessionId = data.session_id;
+        } else {
+            addLog("Erro ao iniciar sessão.");
+            return;
+        }
+        
+        if (data.message) {
+            const mensagens = data.message.split("\n");
+            for (let msg of mensagens) {
+                addLog(msg);
+            }
+        }
+    } catch (error) {
+        addLog("Erro ao conectar ao mundo.");
+        console.error(error);
+    }
+};
+// Fim de INICIALIZAÇÃO (conexão com o servidor)
+
+  
+// Funções Auxiliares  
+function addLog(text) {
+    const log = document.getElementById("log");
+    log.innerHTML += "<div>> " + text + "</div>";
+    log.scrollTop = log.scrollHeight;
+}
+// Fim de Funções Auxiliares  
+
+  
+// COMUNICAÇÃO COM O BACKEND
+async function sendCommand() {
+    const input = document.getElementById("command");
+    const command = input.value.trim();
+
+    if (!command) return;
+    
+    commandHistory.push(command);
+    historyIndex = commandHistory.length;
+
+    if (!sessionId) {
+        addLog("Ainda conectando ao mundo...");
+        return;
+    }
+  
+    // addLog(command);
+
+    try {
+        const response = await fetch("http://127.0.0.1:8000/command", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                command: command
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.response) {
+            addLog(data.response);
+        } else {
+            addLog("Resposta inesperada do servidor.");
+        }
+
+    } catch (error) {
+        addLog("Erro de conexão com o servidor.");
+        console.error(error);
+    }
+
+    input.value = "";
+}
+// Fim de COMUNICAÇÃO COM O BACKEND
+  
+</script>
+<!-- Fim de SCRIPT (Lógica do frontend) -->
+  
+</body>
+</html>
+
+<!-- Editado pela ultima vez em: 26/05/26 -->
+
