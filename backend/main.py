@@ -93,7 +93,7 @@ def connect():
 
 @app.get("/")
 def serve_frontend():
-    return fastapi.responses.FileResponse("frontend/index.html")
+    return fastapi.responses.FileResponse("../frontend/index.html")
 # Fim de Endpoints do Sistema
 
 
