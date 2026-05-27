@@ -1,5 +1,6 @@
 # Imports
 import fastapi
+from fastapi.responses import FileResponse
 import pydantic
 import fastapi.middleware.cors
 import uuid
@@ -89,6 +90,10 @@ def connect():
         "session_id": session_id,
         "message": "Seja bem-vindo ao MUD\nNome do personagem:"
     }
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse("frontend/index.html")
 # Fim de Endpoints do Sistema
 
 
