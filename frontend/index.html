@@ -113,7 +113,7 @@ window.onload = async function () {
     try {
         addLog("Conectando ao mundo...");
         //const response = await fetch("http://127.0.0.1:8000/connect");
-        const response = await fetch("/connect")
+        const response = await fetch("/connect");
         const data = await response.json();
 
         if (data.session_id) {
