@@ -112,7 +112,8 @@ window.onload = async function () {
     // Chamada ao backend para registrar conexão
     try {
         addLog("Conectando ao mundo...");
-        const response = await fetch("http://127.0.0.1:8000/connect");
+        //const response = await fetch("http://127.0.0.1:8000/connect");
+        const response = await fetch("/connect")
         const data = await response.json();
 
         if (data.session_id) {
@@ -163,7 +164,8 @@ async function sendCommand() {
     // addLog(command);
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/command", {
+        //const response = await fetch("http://127.0.0.1:8000/command", {
+        const response = await fetch("/command", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
