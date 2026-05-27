@@ -1,16 +1,16 @@
 # Imports
-from fastapi import FastAPI
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
+import fastapi
+import pydantic
+import fastapi.middleware.cors
 import uuid
 import time
 # Fim de Imports
 
 
 # Conexões permitidas
-app = FastAPI()
+app = fastapi.FastAPI()
 app.add_middleware(
-    CORSMiddleware,
+    fastapi.middleware.cors.CORSMiddleware,
     allow_origins=["*"],  # permite qualquer origem (ok para desenvolvimento)
     allow_credentials=True,
     allow_methods=["*"],
@@ -67,7 +67,7 @@ def validar_senha(senha):
 
 
 # Modelos de Dados: (entrada/saída da API):
-class Command(BaseModel):
+class Command(pydantic.BaseModel):
     session_id: str
     command: str
 # Fim de Modelos de Dados: (entrada/saída da API):
