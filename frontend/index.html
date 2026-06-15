@@ -211,8 +211,8 @@
 
     let commandHistory = [];
     let historyIndex = -1;
-    let sessionId = null;
     let inputMode = "normal";
+    let socket = null;
     // Fim de Estado do Frontend
     
 
@@ -246,31 +246,93 @@
             - sincronização inicial
     */
 
-    window.onload = async function () {
-        // Permite enviar comando com ENTER
-        document.getElementById("command").addEventListener("keydown", function(e) {
+    // window.onload = async function () {
+    //     // Permite enviar comando com ENTER
+    //     document.getElementById("command").addEventListener("keydown", function(e) {
             
+    //         if (e.key === "Enter") {
+    //             sendCommand();
+    //         }
+        
+    //         else if (e.key === "ArrowUp") {
+            
+    //             if (!isHistoryEnabled()) return;
+            
+    //             if (historyIndex > 0) {
+    //                 historyIndex--;
+    //                 this.value = commandHistory[historyIndex];
+    //             }
+
+    //             e.preventDefault();            
+            
+    //         }
+        
+    //         else if (e.key === "ArrowDown") {
+            
+    //             if (!isHistoryEnabled()) return;
+            
+    //             if (historyIndex < commandHistory.length - 1) {
+    //                 historyIndex++;
+    //                 this.value = commandHistory[historyIndex];
+    //             } else {
+    //                 historyIndex = commandHistory.length;
+    //                 this.value = "";
+    //             }
+            
+    //             e.preventDefault();
+                
+            
+    //         }
+        
+    //     });
+
+    //     // Chamada ao backend para registrar conexão
+        
+    //     try {                                                                       // Tentativa de estabelecer conexão inicial com o backend 
+    //         addLog("Conectando ao mundo...");                                       // Mensagem inicial de conexão
+    //         const response = await fetch("http://127.0.0.1:8000/connect");          // Chamada ao backend para registrar conexão local
+    //         //const response = await fetch("/connect");                             // Chamada ao backend para registrar conexão com o RENDER)  
+    //         const data = await response.json();                                     // Processamento da resposta do backend
+    //         addLog("Resposta completa do servidor:");
+    //         addLog(JSON.stringify(data, null, 2));
+
+    //     if (data.session_id) {                                                      // Verificação da existência de session_id na resposta    
+    //             sessionId = data.session_id;                                        // Armazenamento do session_id localmente.      
+    //         } else {                                                                // Caso session_id não seja fornecido, exibe mensagem de erro.
+    //             addLog("Erro ao iniciar sessão.");                                  // Mensagem de erro
+    //             return;                                                             // Interrompe a inicialização caso session_id seja ausente.
+    //         }
+            
+    //         if (data.message) {                                                     // Verificação da existência de mensagem na resposta
+    //             const mensagens = data.message.split("\n");                         // Divisão da mensagem em linhas, caso haja múltiplas mensagens separadas por quebras de linha. 
+    //             for (let msg of mensagens) {                                        // Iteração sobre cada linha da mensagem
+    //                 addLog(msg);                                                    // Exibição de cada linha da mensagem no log do frontend
+    //             }
+    //         }
+    //     } catch (error) {                                                           // Tratamento de erros na conexão inicial
+    //         addLog("Erro ao conectar ao mundo.");                                   // Mensagem de erro genérica para o usuário
+    //         console.error(error);                                                   // Log detalhado do erro no console para depuração
+    //     }
+    // };
+
+    window.onload = function () {
+        const input = document.getElementById("command");
+
+        // --- Configuração dos Atalhos de Teclado (Mantido) ---
+        input.addEventListener("keydown", function(e) {
             if (e.key === "Enter") {
                 sendCommand();
             }
-        
             else if (e.key === "ArrowUp") {
-            
                 if (!isHistoryEnabled()) return;
-            
                 if (historyIndex > 0) {
                     historyIndex--;
                     this.value = commandHistory[historyIndex];
                 }
-
                 e.preventDefault();            
-            
             }
-        
             else if (e.key === "ArrowDown") {
-            
                 if (!isHistoryEnabled()) return;
-            
                 if (historyIndex < commandHistory.length - 1) {
                     historyIndex++;
                     this.value = commandHistory[historyIndex];
@@ -278,42 +340,62 @@
                     historyIndex = commandHistory.length;
                     this.value = "";
                 }
-            
                 e.preventDefault();
-                
-            
             }
-        
         });
 
-        // Chamada ao backend para registrar conexão
+        // --- Inicialização do WebSocket ---
+        addLog("Conectando ao mundo...");
         
-        try {                                                                       // Tentativa de estabelecer conexão inicial com o backend 
-            addLog("Conectando ao mundo...");                                       // Mensagem inicial de conexão
-            const response = await fetch("http://127.0.0.1:8000/connect");          // Chamada ao backend para registrar conexão local
-            //const response = await fetch("/connect");                             // Chamada ao backend para registrar conexão com o RENDER)  
-            const data = await response.json();                                     // Processamento da resposta do backend
-            addLog("Resposta completa do servidor:");
-            addLog(JSON.stringify(data, null, 2));
-
-        if (data.session_id) {                                                      // Verificação da existência de session_id na resposta    
-                sessionId = data.session_id;                                        // Armazenamento do session_id localmente.      
-            } else {                                                                // Caso session_id não seja fornecido, exibe mensagem de erro.
-                addLog("Erro ao iniciar sessão.");                                  // Mensagem de erro
-                return;                                                             // Interrompe a inicialização caso session_id seja ausente.
-            }
-            
-            if (data.message) {                                                     // Verificação da existência de mensagem na resposta
-                const mensagens = data.message.split("\n");                         // Divisão da mensagem em linhas, caso haja múltiplas mensagens separadas por quebras de linha. 
-                for (let msg of mensagens) {                                        // Iteração sobre cada linha da mensagem
-                    addLog(msg);                                                    // Exibição de cada linha da mensagem no log do frontend
-                }
-            }
-        } catch (error) {                                                           // Tratamento de erros na conexão inicial
-            addLog("Erro ao conectar ao mundo.");                                   // Mensagem de erro genérica para o usuário
-            console.error(error);                                                   // Log detalhado do erro no console para depuração
+        // Define a URL do WebSocket (ajuste a porta se necessário)
+        // Definir o wsUrl para o endereço do serviço no render.
+        // Determinação automática do endereço do WebSocket
+        let wsUrl;
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+            // Ambiente Local
+            wsUrl = "ws://127.0.0.1:8000/ws";
+        } else {
+            // Ambiente de Produção (Render, Vercel, etc.)
+            // Usa o mesmo hostname da página atual, mas troca http/https por ws/wss
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            wsUrl = `${protocol}//${window.location.host}/ws`;
         }
-    };
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = function() {
+            addLog("Conexão estabelecida com sucesso.");
+            // O servidor já envia a mensagem de boas-vindas automaticamente ao conectar
+        };
+
+        socket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                
+                // Atualiza a UI (modo senha, etc)
+                syncUIState(data);
+
+                if (data.response) {
+                    addLog(data.response);
+                }
+            } catch (e) {
+                addLog("Erro ao processar mensagem do servidor.");
+                console.error(e);
+            }
+        };
+
+        socket.onclose = function() {
+            addLog("Conexão perdida. Tentando reconectar em 3 segundos...");
+            setTimeout(() => {
+                window.location.reload(); // Recarrega a página para reconectar
+            }, 3000);
+        };
+
+        socket.onerror = function(error) {
+            addLog("Erro na conexão WebSocket.");
+            console.error(error);
+        };
+    };    
+    
     // Fim de Inicialização do Cliente (conexão inicial)
 
 
@@ -348,7 +430,7 @@
             - reconexão automática
     */
 
-    async function sendCommand() {
+    function sendCommand() {
         const input = document.getElementById("command");
         const command = input.value.trim();
 
@@ -359,44 +441,19 @@
             historyIndex = commandHistory.length;
         }
 
-        if (!sessionId) {
-            addLog("Ainda conectando ao mundo...");
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            addLog("Sem conexão com o mundo. Aguarde...");
             return;
         }
-    
-        // addLog(command);
 
-        try {
-            const response = await fetch("http://127.0.0.1:8000/command", {
-            //const response = await fetch("/command", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    command: command
-                })
-            });
-
-            const data = await response.json();
-
-            syncUIState(data);
-        
-            if (data.response) {
-                addLog(data.response);
-            } else {
-                addLog("Resposta inesperada do servidor.");
-            }
-
-        } catch (error) {
-            addLog("Erro de conexão com o servidor.");
-            console.error(error);
-        }
+        // Envia o texto puro diretamente pelo WebSocket
+        socket.send(command);
 
         input.value = "";
         input.selectionStart = 0;
         input.selectionEnd = 0;
+        
+        // Mantém o foco apenas se não estiver em modo de senha
         if (inputMode !== "senha" && inputMode !== "confirmacao") {
             input.focus();
         }

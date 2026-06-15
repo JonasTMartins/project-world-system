@@ -39,6 +39,8 @@ import pydantic
 import fastapi.middleware.cors
 import uuid
 import time
+from fastapi import WebSocket, WebSocketDisconnect
+import asyncio
 # Fim de Imports
 
 
@@ -75,6 +77,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Fim de Conexões permitidas
+
+
+# Gerenciamento de Conexões WebSocket ========================================================================================================
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: dict, websocket: WebSocket):
+        import json
+        await websocket.send_text(json.dumps(message))
+
+manager = ConnectionManager()
+# Fim de Gerenciamento de Conexões WebSocket
 
 
 # Configuração de Sessão ======================================================================================================================
@@ -160,91 +183,65 @@ def processar_entrada_sessao(session, texto):
 
     # ===== ESTADO: ESPERANDO NOME =====
     if estado == "esperando_nome":
-        nome = texto
-
+        nome = texto.strip()
         valido, motivo = validar_nome(nome)
         
         if not valido:
-            return motivo or "Nome inválido. Tente novamente."
+            return {"response": motivo or "Nome inválido. Tente novamente.", "mode": "normal"}
 
         session["nome_temp"] = nome
 
         if nome in players:
             session["estado"] = "esperando_senha"
-            return {
-                "response": "Personagem existe. Digite a senha:",
-                "mode": "senha"
-            }
+            return {"response": "Personagem existe. Digite a senha:", "mode": "senha"}
         else:
             session["estado"] = "criando_senha"
-            return {
-                "response": "Novo personagem. Crie uma senha:",
-                "mode": "senha"
-            }
+            return {"response": "Novo personagem. Crie uma senha:", "mode": "senha"}
 
     # ===== ESTADO: CRIANDO SENHA =====
     elif estado == "criando_senha":
-        senha = texto
-
+        senha = texto.strip()
         valido, motivo = validar_senha(senha)
         
         if not valido:
-            return motivo or "Senha inválida."
-
-        nome = session["nome_temp"]
+            return {"response": motivo or "Senha inválida.", "mode": "senha"}
 
         session["senha_temp"] = senha
         session["estado"] = "confirmando_senha"
-        return {
-            "response": "Confirme sua senha:",
-            "mode": "confirmacao"
-        }
+        return {"response": "Confirme sua senha:", "mode": "confirmacao"}
 
     # ===== ESTADO: CONFIRMANDO SENHA =====
     elif estado == "confirmando_senha":
-        senha_confirmada = texto
+        senha_confirmada = texto.strip()
       
         if senha_confirmada != session["senha_temp"]:
             session["senha_temp"] = None
             session["estado"] = "criando_senha"
-            return {
-                "response": "Senhas não coincidem. Crie novamente a senha:",
-                "mode": "senha"
-            }
+            return {"response": "Senhas não coincidem. Crie novamente a senha:", "mode": "senha"}
 
         nome = session["nome_temp"]
-        
         criar_personagem(nome, hash_senha(session["senha_temp"]))
         
         session["senha_temp"] = None
         session["player_id"] = nome
         session["estado"] = "logado"
       
-        return {
-            "response": f"Personagem '{nome}' criado com sucesso. Você entrou no mundo.",
-            "mode": "normal"
-        }
+        return {"response": f"Personagem '{nome}' criado com sucesso. Você entrou no mundo.", "mode": "normal"}
       
     # ===== ESTADO: ESPERANDO SENHA =====
     elif estado == "esperando_senha":
-        senha = texto
+        senha = texto.strip()
         nome = session["nome_temp"]
 
         if not autenticar_personagem(nome, senha):
-            return {
-                "response": "Senha incorreta.",
-                "mode": "senha"
-            }
+            return {"response": "Senha incorreta.", "mode": "senha"}
 
         session["player_id"] = nome
         session["estado"] = "logado"
 
-        return {
-            "response": f"Bem-vindo de volta, {nome}.",
-            "mode": "normal"
-        }
+        return {"response": f"Bem-vindo de volta, {nome}.", "mode": "normal"}
 
-    return "Erro de sessão."
+    return {"response": "Erro de sessão desconhecido.", "mode": "normal"}
 # Fim de Sessões
 
 
@@ -284,7 +281,7 @@ class Command(pydantic.BaseModel):
 
 
 # Endpoints do Sistema ========================================================================================================================
-""" Documentação dos ENDPOINTS DO SISTEMA
+""" Documentação dos ENDPOINTS DO SISTEMA (Desatualizado)
 
     Responsabilidade:
         Expor funcionalidades do servidor através da API.
@@ -312,23 +309,6 @@ class Command(pydantic.BaseModel):
         - monitoramento
         - APIs auxiliares
 """
-
-@app.get("/connect")                                                                # Endpoint de conexão
-def connect():                                                                      #Função executada quando um cliente se conecta ao servidor.
-  
-    session_id = str(uuid.uuid4())
-
-    sessions[session_id] = {
-        "estado": "esperando_nome",
-        "player_id": None,
-        "senha_temp": None,
-        "last_active": time.time()
-    }
-
-    return {
-        "session_id": session_id,
-        "message": "Seja bem-vindo ao MUD\nNome do personagem:"
-    }
 
 @app.get("/")
 def serve_frontend():
@@ -886,72 +866,72 @@ commands = {
 }
 ## Fim de Definição de Comandos
 
-@app.post("/command")
-def handle_command(cmd: Command):
-
-    # =========================================================
-    # 1. RECUPERAÇÃO DA SESSÃO
-    # =========================================================
-    session = get_session(cmd.session_id)
-
-    if not session:
-        return {"response": "Sessão inválida."}
-
-    agora = time.time()
-
-    global last_cleanup
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    # 1. Criar uma nova sessão imediatamente ao conectar
+    session_id = str(uuid.uuid4())
+    sessions[session_id] = {
+        "estado": "esperando_nome",
+        "player_id": None,
+        "nome_temp": None,
+        "senha_temp": None,
+        "last_active": time.time(),
+        "websocket": websocket  # Armazena referência do websocket na sessão
+    }
     
-    if agora - last_cleanup > SESSION_CLEANUP_INTERVAL:
-        limpar_sessoes()
-        last_cleanup = agora
+    await manager.connect(websocket)
     
-    if agora - session["last_active"] > SESSION_TIMEOUT:
-        del sessions[cmd.session_id]
-        return {"response": "Sessão expirada. Conecte-se novamente."}
-        #Incluir chamada para reconexão com senha.
-  
-    session["last_active"] = agora
+    # Envia mensagem de boas-vindas inicial
+    await manager.send_personal_message(
+        {"response": "Seja bem-vindo ao MUD\nNome do personagem:", "mode": "normal"},
+        websocket
+    )
 
-    # =========================================================
-    # 2. FLUXO DE ENTRADA (LOGIN / CRIAÇÃO)
-    # Se ainda não está logado, tratamos a entrada aqui
-    # =========================================================
-    if session["estado"] != "logado":
-        resposta = processar_entrada_sessao(session, cmd.command.strip())
-        
-        if isinstance(resposta, dict):
-            return resposta
-        
-        return {"response": resposta, "mode": "normal"}
+    try:
+        while True:
+            # Atualiza tempo de atividade
+            sessions[session_id]["last_active"] = time.time()
+            
+            # 2. Recebe mensagem do cliente
+            data = await websocket.receive_text()
+            
+            session = sessions.get(session_id)
+            if not session:
+                await manager.send_personal_message({"response": "Sessão perdida.", "mode": "normal"}, websocket)
+                break
 
-    # =========================================================
-    # 3. RECUPERAÇÃO DO PLAYER (agora via sessão)
-    # =========================================================
-    player_id = session["player_id"]
-    player = get_player(player_id)
+            # 3. Verifica se está logado para decidir o fluxo
+            if session["estado"] != "logado":
+                # Fluxo de Login/Criação
+                resposta = processar_entrada_sessao(session, data)
+                await manager.send_personal_message(resposta, websocket)
+            else:
+                # Fluxo de Jogo (Comandos)
+                player_id = session["player_id"]
+                player = get_player(player_id)
 
-    if not player:
-        return {"response": "Personagem não existe."}
+                if not player:
+                    await manager.send_personal_message({"response": "Personagem não encontrado.", "mode": "normal"}, websocket)
+                    break
 
-    # =========================================================
-    # 4. INTERPRETAÇÃO DO TEXTO (fala vs comando)
-    # =========================================================
-    entrada = interpretar_comando(cmd.command)
-    tipo = entrada["tipo"]
-  
-    if tipo == "fala":
-        fala = entrada["texto"]
-        return {"response": f"{player_id} diz: {fala}"}
+                # Interpreta entrada (comando ou fala)
+                entrada = interpretar_comando(data)
+                
+                if entrada["tipo"] == "fala":
+                    resposta = {"response": f"{player_id} diz: {entrada['texto']}", "mode": "normal"}
+                else:
+                    # Executa comando
+                    resultado = executar_comando(player, entrada["verbo"], entrada["args"], session)
+                    resposta = {"response": resultado, "mode": "normal"}
+                
+                await manager.send_personal_message(resposta, websocket)
 
-    # =========================================================
-    # 5. EXECUÇÃO DO COMANDO
-    # =========================================================
-    verbo = entrada["verbo"]
-    args = entrada["args"]
-    resultado = executar_comando(player, verbo, args, session)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        if session_id in sessions:
+            del sessions[session_id]
+        # print(f"Cliente {session_id} desconectado.")
 
-    return {"response": resultado}
-# Fim de Interpretador de Comandos
 # Fim da Categoria MOTOR
 
 
