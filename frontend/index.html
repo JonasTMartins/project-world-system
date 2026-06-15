@@ -1,203 +1,565 @@
-<!DOCTYPE html>
-<!-- Configurações da página -->
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>Mundo Online</title>
-<!-- Fim de Configurações da página -->
+    <!DOCTYPE html>
+    <!-- #SISTEMA: Configurações da página =============================================================================================================== -->
+    <!-- Documentação das CONFIGURAÇÕES DA PÁGINA
 
-  
-<!-- ESTILO (Interface visual) -->
-<style>
-body {
-    background-color: #0d0d0d;
-    color: #00ffcc;
-    font-family: monospace;
-    display: flex;
-    justify-content: center;
-}
+        Responsabilidade:
+            Definir informações básicas do documento HTML.
 
-#game {
-    width: 800px;
-    margin-top: 40px;
-}
+        Funções Atuais:
+            - idioma da página
+            - codificação de caracteres
+            - título da aplicação
 
-#log {
-    background-color: black;
-    height: 400px;
-    overflow-y: auto;
-    padding: 10px;
-    border: 1px solid #00ffcc;
-}
+        Princípio:
+            Centralizar configurações necessárias para o navegador
+            interpretar corretamente o documento.
 
-#input-area {
-    margin-top: 10px;
-    display: flex;
-}
+        Evitar:
+            - lógica de aplicação
+            - estilos visuais
+            - comportamento do sistema
 
-#command {
-    flex: 1;
-    background-color: black;
-    color: #00ffcc;
-    border: 1px solid #00ffcc;
-    padding: 10px;
-}
+        Objetivo:
+            Garantir que o frontend seja carregado corretamente.
 
-button {
-    background-color: black;
-    color: #00ffcc;
-    border: 1px solid #00ffcc;
-    padding: 10px;
-    cursor: pointer;
-}
-</style>
-<!-- FIM de ESTILO (Interface visual) -->
+        Expansões Futuras:
+            - favicon
+            - metadados
+            - SEO
+            - configurações de compatibilidade
+            - manifestos de aplicação
+    -->
+
+    <html lang="pt-br">
+    <head>
+    <meta charset="UTF-8">
+    <title>Mundo Online</title>
+    <!-- Fim de Configurações da página -->
 
 
-</head>
+    
 
-<body>
+    <!-- #JOGO: Estilo da Interface (aparência visual) ================================================================================================ -->
+    <!-- Documentação do ESTILO DA INTERFACE
 
-<!-- ESTRUTURA DA INTERFACE -->  
-<div id="game">
+        Responsabilidade:
+            Definir a aparência visual da interface.
 
-    <div id="log"></div>
+        Funções Atuais:
+            - cores do sistema
+            - posicionamento dos elementos
+            - aparência do log
+            - aparência do campo de entrada
+            - aparência dos botões
 
-    <div id="input-area">
-        <input type="text" id="command" placeholder="Digite um comando...">
-        <button onclick="sendCommand()">Enviar</button>
+        Princípio:
+            Controlar exclusivamente a apresentação visual.
+
+        Evitar:
+            - lógica de negócio
+            - comunicação com backend
+            - regras de jogo
+
+        Objetivo:
+            Manter separação clara entre visual e comportamento.
+
+        Expansões Futuras:
+            - temas visuais
+            - responsividade
+            - animações
+            - acessibilidade
+            - personalização de interface
+    -->
+
+    <style>
+    body {
+        background-color: #0d0d0d;
+        color: #00ffcc;
+        font-family: monospace;
+        display: flex;
+        justify-content: center;
+    }
+
+    #game {
+        width: 800px;
+        margin-top: 40px;
+    }
+
+    #log {
+        background-color: black;
+        height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #00ffcc;
+    }
+
+    #input-area {
+        margin-top: 10px;
+        display: flex;
+    }
+
+    #command {
+        flex: 1;
+        background-color: black;
+        color: #00ffcc;
+        border: 1px solid #00ffcc;
+        padding: 10px;
+    }
+
+    button {
+        background-color: black;
+        color: #00ffcc;
+        border: 1px solid #00ffcc;
+        padding: 10px;
+        cursor: pointer;
+    }
+    </style>
+    <!-- Fim de Estilo da Interface (aparência visual) -->
+
+    
+    </head>
+
+    <body>
+
+    
+    <!-- #JOGO: Estrutura da Interface (elementos visíveis) =========================================================================================== -->
+    <!-- Documentação da ESTRUTURA DA INTERFACE
+
+        Responsabilidade:
+            Definir os elementos visíveis da aplicação.
+
+        Funções Atuais:
+            - área principal do jogo
+            - painel de mensagens
+            - campo de entrada
+            - botão de envio
+
+        Princípio:
+            Representar apenas a estrutura da interface.
+
+        Evitar:
+            - regras de comportamento
+            - lógica de comunicação
+            - processamento de dados
+
+        Objetivo:
+            Organizar os componentes que serão manipulados pelo frontend.
+
+        Expansões Futuras:
+            - inventário
+            - painel de personagem
+            - mapa
+            - janelas auxiliares
+            - elementos de interface avançados
+    -->
+
+    <div id="game">
+
+        <div id="log"></div>
+
+        <div id="input-area">
+            <input type="text" id="command" placeholder="Digite um comando...">
+            <button onclick="sendCommand()">Enviar</button>
+        </div>
+
     </div>
-
-</div>
-<!-- Fim de ESTRUTURA DA INTERFACE -->
+    <!-- Fim de Estrutura da Interface (elementos visíveis) -->
 
 
-<!-- SCRIPT (Lógica do frontend) -->
-<script>
+    
 
-let commandHistory = [];
-let historyIndex = -1;
-let sessionId = null;
+    <!-- Script do Frontend (lógica do cliente) ================================================================================================ -->
+    <script>
 
-// INICIALIZAÇÃO (conexão com o servidor)
-window.onload = async function () {
-    // Permite enviar comando com ENTER
-    document.getElementById("command").addEventListener("keydown", function(e) {
+    /**
+    =========================================================
+    SISTEMA
+    =========================================================
+    Sessões da Categoria "Sistema" aqui.
+    */
+
+    // #SISTEMA: Estado do Frontend (memória local) =========================================================================================================
+    /** Documentação do ESTADO DO FRONTEND
+
+        Responsabilidade:
+            Armazenar informações locais necessárias para o funcionamento
+            da interface.
+
+        Funções Atuais:
+            - identificação da sessão
+            - histórico de comandos
+            - posição no histórico
+            - modo atual de entrada
+
+        Princípio:
+            Guardar apenas informações necessárias ao cliente.
+
+        Evitar:
+            - armazenamento de regras de jogo
+            - decisões de autoridade
+            - informações críticas do servidor
+
+        Objetivo:
+            Permitir que a interface mantenha contexto local de operação.
+
+        Expansões Futuras:
+            - preferências do usuário
+            - estado visual da interface
+            - cache temporário
+            - configurações locais
+    */
+
+    let commandHistory = [];
+    let historyIndex = -1;
+    let sessionId = null;
+    let inputMode = "normal";
+    // Fim de Estado do Frontend
+    
+
+    // #SISTEMA: Inicialização do Cliente (conexão inicial) =================================================================================================
+    /** Documentação da INICIALIZAÇÃO DO CLIENTE
+
+        Responsabilidade:
+            Preparar o frontend para interação com o servidor.
+
+        Funções Atuais:
+            - registrar atalhos de teclado
+            - estabelecer conexão inicial
+            - obter sessão
+            - exibir mensagens iniciais
+
+        Princípio:
+            Executar apenas tarefas necessárias ao carregamento inicial.
+
+        Evitar:
+            - regras de jogo
+            - processamento contínuo
+            - responsabilidades permanentes
+
+        Objetivo:
+            Garantir que o cliente esteja pronto para uso.
+
+        Expansões Futuras:
+            - carregamento de configurações
+            - autenticação automática
+            - reconexão
+            - sincronização inicial
+    */
+
+    window.onload = async function () {
+        // Permite enviar comando com ENTER
+        document.getElementById("command").addEventListener("keydown", function(e) {
+            
+            if (e.key === "Enter") {
+                sendCommand();
+            }
         
-        if (e.key === "Enter") {
-            sendCommand();
-        }
-    
-        else if (e.key === "ArrowUp") {
-            if (historyIndex > 0) {
-                historyIndex--;
-                this.value = commandHistory[historyIndex];
-            }
-            e.preventDefault();
-        }
-    
-        else if (e.key === "ArrowDown") {
-            if (historyIndex < commandHistory.length - 1) {
-                historyIndex++;
-                this.value = commandHistory[historyIndex];
-            } else {
-                historyIndex = commandHistory.length;
-                this.value = "";
-            }
-            e.preventDefault();
-        }
-    
-    });
+            else if (e.key === "ArrowUp") {
+            
+                if (!isHistoryEnabled()) return;
+            
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    this.value = commandHistory[historyIndex];
+                }
 
-    // Chamada ao backend para registrar conexão
-    try {
-        addLog("Conectando ao mundo...");
-        //const response = await fetch("http://127.0.0.1:8000/connect");
-        const response = await fetch("/connect");
-        const data = await response.json();
-
-        if (data.session_id) {
-            sessionId = data.session_id;
-        } else {
-            addLog("Erro ao iniciar sessão.");
-            return;
-        }
+                e.preventDefault();            
+            
+            }
         
-        if (data.message) {
-            const mensagens = data.message.split("\n");
-            for (let msg of mensagens) {
-                addLog(msg);
+            else if (e.key === "ArrowDown") {
+            
+                if (!isHistoryEnabled()) return;
+            
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    this.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    this.value = "";
+                }
+            
+                e.preventDefault();
+                
+            
             }
-        }
-    } catch (error) {
-        addLog("Erro ao conectar ao mundo.");
-        console.error(error);
-    }
-};
-// Fim de INICIALIZAÇÃO (conexão com o servidor)
-
-  
-// Funções Auxiliares  
-function addLog(text) {
-    const log = document.getElementById("log");
-    log.innerHTML += "<div>> " + text + "</div>";
-    log.scrollTop = log.scrollHeight;
-}
-// Fim de Funções Auxiliares  
-
-  
-// COMUNICAÇÃO COM O BACKEND
-async function sendCommand() {
-    const input = document.getElementById("command");
-    const command = input.value.trim();
-
-    if (!command) return;
-    
-    commandHistory.push(command);
-    historyIndex = commandHistory.length;
-
-    if (!sessionId) {
-        addLog("Ainda conectando ao mundo...");
-        return;
-    }
-  
-    // addLog(command);
-
-    try {
-        //const response = await fetch("http://127.0.0.1:8000/command", {
-        const response = await fetch("/command", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                session_id: sessionId,
-                command: command
-            })
+        
         });
 
-        const data = await response.json();
+        // Chamada ao backend para registrar conexão
+        
+        try {                                                                       // Tentativa de estabelecer conexão inicial com o backend 
+            addLog("Conectando ao mundo...");                                       // Mensagem inicial de conexão
+            const response = await fetch("http://127.0.0.1:8000/connect");          // Chamada ao backend para registrar conexão local
+            //const response = await fetch("/connect");                             // Chamada ao backend para registrar conexão com o RENDER)  
+            const data = await response.json();                                     // Processamento da resposta do backend
+            addLog("Resposta completa do servidor:");
+            addLog(JSON.stringify(data, null, 2));
 
-        if (data.response) {
-            addLog(data.response);
-        } else {
-            addLog("Resposta inesperada do servidor.");
+        if (data.session_id) {                                                      // Verificação da existência de session_id na resposta    
+                sessionId = data.session_id;                                        // Armazenamento do session_id localmente.      
+            } else {                                                                // Caso session_id não seja fornecido, exibe mensagem de erro.
+                addLog("Erro ao iniciar sessão.");                                  // Mensagem de erro
+                return;                                                             // Interrompe a inicialização caso session_id seja ausente.
+            }
+            
+            if (data.message) {                                                     // Verificação da existência de mensagem na resposta
+                const mensagens = data.message.split("\n");                         // Divisão da mensagem em linhas, caso haja múltiplas mensagens separadas por quebras de linha. 
+                for (let msg of mensagens) {                                        // Iteração sobre cada linha da mensagem
+                    addLog(msg);                                                    // Exibição de cada linha da mensagem no log do frontend
+                }
+            }
+        } catch (error) {                                                           // Tratamento de erros na conexão inicial
+            addLog("Erro ao conectar ao mundo.");                                   // Mensagem de erro genérica para o usuário
+            console.error(error);                                                   // Log detalhado do erro no console para depuração
+        }
+    };
+    // Fim de Inicialização do Cliente (conexão inicial)
+
+
+    // #SISTEMA: Comunicação com o Backend ==================================================================================================================
+    /** Documentação da COMUNICAÇÃO COM O BACKEND
+
+        Responsabilidade:
+            Enviar dados ao servidor e processar respostas.
+
+        Funções Atuais:
+            - envio de comandos
+            - recebimento de respostas
+            - tratamento de erros
+            - atualização da interface
+
+        Princípio:
+            Toda comunicação deve ocorrer através da API do servidor.
+
+        Evitar:
+            - decisões de autoridade no cliente
+            - lógica de jogo local
+            - alterações diretas de estado sem confirmação do backend
+
+        Objetivo:
+            Manter comunicação simples, previsível e confiável.
+
+        Expansões Futuras:
+            - WebSockets
+            - eventos em tempo real
+            - notificações assíncronas
+            - sincronização contínua
+            - reconexão automática
+    */
+
+    async function sendCommand() {
+        const input = document.getElementById("command");
+        const command = input.value.trim();
+
+        if (!command) return;
+            
+        if (isHistoryEnabled()) {
+            commandHistory.push(command);
+            historyIndex = commandHistory.length;
         }
 
-    } catch (error) {
-        addLog("Erro de conexão com o servidor.");
-        console.error(error);
+        if (!sessionId) {
+            addLog("Ainda conectando ao mundo...");
+            return;
+        }
+    
+        // addLog(command);
+
+        try {
+            const response = await fetch("http://127.0.0.1:8000/command", {
+            //const response = await fetch("/command", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    command: command
+                })
+            });
+
+            const data = await response.json();
+
+            syncUIState(data);
+        
+            if (data.response) {
+                addLog(data.response);
+            } else {
+                addLog("Resposta inesperada do servidor.");
+            }
+
+        } catch (error) {
+            addLog("Erro de conexão com o servidor.");
+            console.error(error);
+        }
+
+        input.value = "";
+        input.selectionStart = 0;
+        input.selectionEnd = 0;
+        if (inputMode !== "senha" && inputMode !== "confirmacao") {
+            input.focus();
+        }
+    }
+    // Fim de Comunicação com o Backend
+
+
+
+
+
+
+    
+
+    /**
+    =========================================================
+    MOTOR
+    =========================================================
+    Sessões da Categoria "Motor" aqui.
+    */
+
+    // #MOTOR: Controle de Histórico de Comandos ==========================================================================================================
+    /** Documentação do CONTROLE DE HISTÓRICO
+
+        Responsabilidade:
+            Gerenciar o histórico local de comandos do usuário.
+
+        Funções Atuais:
+            - armazenamento de comandos
+            - navegação pelo histórico
+            - bloqueio durante entrada de senha
+
+        Princípio:
+            Fornecer conveniência ao usuário sem comprometer segurança.
+
+        Evitar:
+            - armazenamento de informações sensíveis
+            - dependência de regras do backend
+
+        Objetivo:
+            Melhorar a experiência de uso da interface textual.
+
+        Expansões Futuras:
+            - pesquisa de histórico
+            - filtros
+            - persistência local
+            - favoritos
+    */
+
+    function isHistoryEnabled() {
+        return inputMode === "normal";
     }
 
-    input.value = "";
-}
-// Fim de COMUNICAÇÃO COM O BACKEND
-  
-</script>
-<!-- Fim de SCRIPT (Lógica do frontend) -->
-  
-</body>
-</html>
+    // Fim de Controle de Histórico de Comandos
 
-<!-- Editado pela ultima vez em: 26/05/26 -->
 
+    // #MOTOR: Sincronização de Estado (backend → frontend) ===============================================================================================
+    /** Documentação da SINCRONIZAÇÃO DE ESTADO
+
+        Responsabilidade:
+            Refletir no frontend o estado informado pelo backend.
+
+        Funções Atuais:
+            - atualização do modo de entrada
+            - sincronização de comportamento visual
+
+        Princípio:
+            O backend possui autoridade sobre o estado do sistema.
+            O frontend apenas reflete esse estado.
+
+        Evitar:
+            - inferir estados por conta própria
+            - criar estados paralelos
+            - duplicar regras do servidor
+
+        Objetivo:
+            Manter cliente e servidor sincronizados.
+
+        Expansões Futuras:
+            - estados de combate
+            - estados de menus
+            - estados de seleção
+            - modos especiais de interação
+    */
+
+    function syncUIState(data) {
+        if (data.mode) {
+            updateInputMode(data.mode);
+        } else {
+            updateInputMode("normal");
+        }
+    }
+    // Fim de Sincronização de Estado (backend → frontend)
+
+
+
+
+
+
+    
+    
+    /**
+    =========================================================
+    JOGO
+    =========================================================
+    Sessões da Categoria "JOGO" aqui.
+    */
+
+    // #JOGO: Funções de Interface (controle visual) =====================================================================================================
+    /** Documentação das FUNÇÕES DE INTERFACE
+
+        Responsabilidade:
+            Manipular elementos visuais da aplicação.
+
+        Funções Atuais:
+            - exibição de mensagens
+            - alteração do modo de entrada
+            - atualização de componentes visuais
+
+        Princípio:
+            Conter apenas lógica relacionada à interface.
+
+        Evitar:
+            - regras de jogo
+            - comunicação direta complexa
+            - processamento de comandos
+
+        Objetivo:
+            Centralizar operações de atualização visual.
+
+        Expansões Futuras:
+            - notificações
+            - janelas modais
+            - indicadores visuais
+            - animações
+            - componentes reutilizáveis
+    */
+
+    function addLog(text) {                                                 // Função que recebe um texto como parâmetro e o exibe no painel de mensagens.
+        const log = document.getElementById("log");                         // 
+        log.innerHTML += "<div>> " + text + "</div>";
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function updateInputMode(mode) {
+        const input = document.getElementById("command");
+
+        inputMode = mode;
+
+        if (mode === "senha" || mode === "confirmacao") {
+            input.type = "password";
+            input.placeholder = "Digite sua senha...";
+        } 
+        else {
+            input.type = "text";
+            input.placeholder = "Digite um comando...";
+        }
+    }
+    // Fim de Funções de Interface (controle visual)
+    
+    </script>
+    <!-- Fim de Script do Frontend (lógica do cliente) -->
+    
+    </body>
+    </html>
+
+    <!-- Editado pela ultima vez em: 31/05/26 -->
