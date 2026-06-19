@@ -75,6 +75,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origin_regex=r".*",  # Permite origens dinâmicas (útil para localhost vs render)
 )
 # Fim de Conexões permitidas
 
@@ -313,6 +314,10 @@ class Command(pydantic.BaseModel):
 @app.get("/")
 def serve_frontend():
     return fastapi.responses.FileResponse("../frontend/index.html")
+
+@app.get("/favicon.svg")
+def get_favicon():
+    return fastapi.responses.FileResponse("../frontend/favicon.svg")
 # Fim de Endpoints do Sistema
 # Fim da Categoria SISTEMA
 
@@ -868,6 +873,7 @@ commands = {
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    print(f"Tentativa de conexão recebida de: {websocket.client}")
     # 1. Criar uma nova sessão imediatamente ao conectar
     session_id = str(uuid.uuid4())
     sessions[session_id] = {
